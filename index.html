@@ -22,10 +22,10 @@ h2{font:700 16px Georgia,serif;margin:0 0 8px}input,select,textarea{width:100%;p
 <script type="module">
 import{initializeApp}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import{getAuth,onAuthStateChanged,GoogleAuthProvider,signInWithPopup,signInWithPhoneNumber,RecaptchaVerifier,signOut}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import{getFirestore,collection,doc,getDoc,setDoc,updateDoc,deleteDoc,onSnapshot,query,where,writeBatch}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import{initializeFirestore,collection,doc,getDoc,setDoc,updateDoc,deleteDoc,onSnapshot,query,where,writeBatch}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 /* ====== PASTE YOUR FIREBASE CONFIG HERE (see SETUP.md) ====== */
 const firebaseConfig={apiKey:"AIzaSyDTxyWoQh_bC9x2Y9Iu-GGwVNA4fSbeq18",authDomain:"achiever-academy-c1368.firebaseapp.com",projectId:"achiever-academy-c1368",storageBucket:"achiever-academy-c1368.firebasestorage.app",messagingSenderId:"205287742891",appId:"1:205287742891:web:fa439cfdbada0a71f9c6ee"};
-const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app);
+const app=initializeApp(firebaseConfig),auth=getAuth(app),dbA=initializeFirestore(app,{experimentalAutoDetectLongPolling:true}),dbB=initializeFirestore(app,{experimentalAutoDetectLongPolling:true},'default');let db=dbA;
 const $=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const D={students:[],payments:[],teachers:[],salaries:[]},C=[];let S={},P={},tab='home',sel=null,isStaff=false,me=null,fc='',fq='',cur='₦',conf=null,isT=false,T=null;
 const money=n=>cur+Number(n||0).toLocaleString(),today=()=>new Date().toISOString().slice(0,10),mk=()=>today().slice(0,7),uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
@@ -45,7 +45,7 @@ G({google:()=>w(()=>signInWithPopup(auth,new GoogleAuthProvider())),
 sendOtp:(i,bx)=>w(async()=>{window.rv=window.rv||new RecaptchaVerifier(auth,'rc',{size:'invisible'});conf=await signInWithPhoneNumber(auth,val(i),window.rv);$(bx).innerHTML=`<input id="o${bx}" placeholder="6-digit code" inputmode="numeric"><button class="btn" onclick="verify('${bx}')">Verify</button>`}),
 verify:bx=>w(()=>conf.confirm($('o'+bx).value.trim())),logout:()=>signOut(auth)});
 onAuthStateChanged(auth,async u=>{me=u;$('out').style.display=u?'':'none';if(!u){loginView();return}
- try{const s=await getDoc(doc(db,'staff',(u.email||'_').toLowerCase()));isStaff=s.exists()}catch(e){isStaff=false;$('msg').textContent='Staff check failed: '+(e.code||e.message)}
+ const em=(u.email||'_').toLowerCase();try{isStaff=(await getDoc(doc(db,'staff',em))).exists()}catch(e){try{db=dbB;isStaff=(await getDoc(doc(db,'staff',em))).exists()}catch(e2){db=dbA;isStaff=false;$('msg').textContent='Staff check failed: '+(e.code||e.message)+' / '+(e2.code||e2.message)}}
  if(!isStaff&&u.email&&!$('msg').textContent)$('msg').innerHTML='Signed in as <b>'+esc(u.email)+'</b>. This email is not on the staff list yet.'
  isT=false;if(!isStaff&&u.phoneNumber){try{const t=await getDoc(doc(db,'tportal',u.phoneNumber));if(t.exists()){isT=true;T=t.data()}}catch(e){}}
  try{const p=await getDoc(doc(db,'settings','public'));P=p.exists()?p.data():{};cur=P.cur||'₦';$('sn').textContent='🏫 '+(P.name||'ACHIEVERS ACADEMY PORTAL')}catch(e){}
